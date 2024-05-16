@@ -44,8 +44,6 @@ int is_alpha_right_length(char* input) {
 int get_input(char* fill) {
 	static size_t desierd_len = WORD_LENGTH - 1;
 
-	size_t length = 0;
-	char in;
 	// not matching
 	if (scanf("%5s", fill) != 1)
 		return -1;
@@ -71,7 +69,22 @@ int get_input(char* fill) {
 	return 0;
 }
 
+void compare_words(const char* word, char* input) {
+	size_t i = 0;
+	for (char c = *input; c; c=*++input, ++i) {
+		if (c == word[i]) {
+			printf("\x1b[1;32m%c\x1b[0m", c);
+			continue;
+		} 
+		if (strchr(word, c) != NULL) {
+			printf("\x1b[0;33m%c\x1b[0m", c);
+			continue;
+		}
+		printf("\x1b[0;37m%c\x1b[0m", c);
+	}
 
+	printf("\n");
+}
 
 int main(void) {
 	printf("mursul baby\n");
@@ -115,6 +128,8 @@ int main(void) {
 		// game logic here
 		if (strcmp(current_word, word_to_match) == 0)
 			game_state.state = WON;
+		else 
+			compare_words(word_to_match, current_word);
 		
 		// end of game logic
 
