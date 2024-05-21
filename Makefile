@@ -17,7 +17,6 @@ SRC=$(wildcard src/*.c) $(wildcard src/**/*.c) $(wildcard src/include/**/*.c)
 INCLUDE_DIR = src/include
 
 MURSUL_BUILD = $(CC) $(CFLAGS) `pkg-config --cflags $(PKGS)` -o bin/mursul $(SRC) `pkg-config --libs $(PKGS)` -I$(INCLUDE_DIR) 
-# MURSUL_BUILD = $(CC) $(CFLAGS) -o bin/mursul $(SRC) -I$(INCLUDE_DIR) 
 
 .PHONY = release clean
 build: clean

@@ -24,8 +24,8 @@ typedef struct {
 
 
 // TODO: implement actual word fetching from file/url
-char* get_word() {
-	return "stall";
+char* get_word(char* w) {
+	return w;
 }
 
 int get_input(char* fill) {
@@ -85,10 +85,14 @@ int compare_words_alt(char* word, char* input) {
 	return number_of_right_letters;
 }
 
-int main(void) {
-
+int main(int argc, char** argv) {
 	printf("mursul baby\n");
 	printf("--------\n");
+	if (argc < 2) {
+		printf("USAGE : mursul [word]");
+		return 1;
+	}
+
 	printf("Whenever I’m about to do something, I think, “Would an idiot do that?”\n");
 	printf("And if they would, I do not do that thing. - Dwight Schrute.\n");
 	printf("Now let's see how much of an idiot are YOU!\n");
@@ -104,7 +108,7 @@ int main(void) {
 		.number_of_guesses = 0,
 	};
 
-	char* word_to_match = get_word();
+	char* word_to_match = get_word(argv[1]);
 	// game loop
 	while(game_state.state == IN_PROGRESS) {
 		if (game_state.number_of_guesses == MAX_GUESSES)
