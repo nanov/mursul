@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <raylib.h>
 
 #define MAX_GUESSES 5
 #define WORD_LENGTH 6 // 5 + \0
@@ -58,7 +59,7 @@ int get_input(char* fill) {
 
 
 void compare_words_alt(char* word, char* input) {
-	int secret_count[26] = {0};
+	int secret_count['z' - 'a'] = {0};
 
 	for (char *c=word, *in=input;*c;++c,++in) {
 		if (*in != *c) {
@@ -82,12 +83,16 @@ void compare_words_alt(char* word, char* input) {
 }
 
 int main(void) {
+
 	printf("mursul baby\n");
 	printf("--------\n");
 	printf("Whenever I’m about to do something, I think, “Would an idiot do that?”\n");
 	printf("And if they would, I do not do that thing. - Dwight Schrute.\n");
 	printf("Now let's see how much of an idiot are YOU!\n");
 	printf("--------\n");
+
+	InitAudioDevice();
+	Sound sound = LoadSound("assets/stupid.mp3");
 
 
 	game game_state = {
@@ -98,7 +103,7 @@ int main(void) {
 	char* word_to_match = get_word();
 	// game loop
 	while(game_state.state == IN_PROGRESS) {
-		if (game_state.number_of_guesses == 5)
+		if (game_state.number_of_guesses == 2)
 			break;
 		printf("please enter a 5 letter word:\n");
 		char* current_word = game_state.guesses[game_state.number_of_guesses];
@@ -139,6 +144,14 @@ int main(void) {
 	}
 
 	printf("defintely and idiot, good luck not being one next time...\n");
+
+	PlaySound(sound);
+	// TODO: find better way to block until sound is played
+	while(IsSoundPlaying(sound)) {}
+
+
+	UnloadSound(sound);
+	CloseAudioDevice();
 
 	return 0;
 }
