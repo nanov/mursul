@@ -74,29 +74,23 @@ int get_input(char* fill) {
 void compare_words_alt(char* word, char* input) {
 	int secret_count[26] = {0};
 
-	{
-		char* in = input;
-		for (char* c=word;*c;++c,++in) {
-			if (*in != *c) {
-				secret_count[*c - 'a']++;
-			}
+	for (char *c=word, *in=input;*c;++c,++in) {
+		if (*in != *c) {
+			secret_count[*c - 'a']++;
 		}
 	}
 
-	{
-		char* in = input;
-		for (char* c=word;*c;++c,++in) {
-			if (*in == *c) {
-				printf("\x1b[1;32m%c\x1b[0m", *in);
-				continue;
-			}
-			if (secret_count[*in - 'a'] > 0) {
-				printf("\x1b[0;33m%c\x1b[0m", *in);
-				secret_count[*in - 'a']--;
-				continue;
-			}
-			printf("\x1b[0;37m%c\x1b[0m", *in);
+	for (char* c=word, *in = input;*c;++c,++in) {
+		if (*in == *c) {
+			printf("\x1b[1;32m%c\x1b[0m", *in);
+			continue;
 		}
+		if (secret_count[*in - 'a'] > 0) {
+			printf("\x1b[0;33m%c\x1b[0m", *in);
+			secret_count[*in - 'a']--;
+			continue;
+		}
+		printf("\x1b[0;37m%c\x1b[0m", *in);
 	printf("\n");
 	}
 }
