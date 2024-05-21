@@ -27,20 +27,6 @@ char* get_word() {
 	return "stall";
 }
 
-
-int is_alpha_right_length(char* input) {
-	static size_t desierd_len = WORD_LENGTH - 1;
-	char* input_p = input;
-	size_t len = 0;
-	for (char c = *input_p; c; c = *++input_p,++len) {
-		if (!isalpha(c))
-			return 2;
-	}
-	if ((size_t)(input_p - input) < desierd_len)
-		return 1;
-	return 0;
-}
-
 int get_input(char* fill) {
 	static size_t desierd_len = WORD_LENGTH - 1;
 
