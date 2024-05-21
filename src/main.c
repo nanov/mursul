@@ -69,21 +69,73 @@ int get_input(char* fill) {
 	return 0;
 }
 
+int letter_in_wor(const char* word, char letter, int* found_list) {
+	char* part = (char*)word;
+	while (1) {
+		part = strchr(part, letter);
+		if (part == NULL)
+			return -1;
+		int pos = part - word;
+		if (found_list[pos] == 0)
+			return pos;
+		part++;
+	}
+}
+
+
 void compare_words(const char* word, char* input) {
 	size_t i = 0;
-	for (char c = *input; c; c=*++input, ++i) {
-		if (c == word[i]) {
-			printf("\x1b[1;32m%c\x1b[0m", c);
-			continue;
-		} 
-		if (strchr(word, c) != NULL) {
-			printf("\x1b[0;33m%c\x1b[0m", c);
-			continue;
+	int status_word[5] = {0};
+	int status_input[5] = {0};
+
+	// match exact
+	{
+		int* sP = status_input;
+		int* wP = status_word;
+		for (char* c = input; *c; ++c, ++sP, ++wP) {
+			if (*c == *wP) {
+				*wP = 1;
+				*sP = 1;
+			} 
 		}
-		printf("\x1b[0;37m%c\x1b[0m", c);
 	}
 
+	// match exsiting
+	{
+		int* sP = status_input;
+		for (char* c = input; *c; ++sP) {
+			if (*sP != 0)
+				continue;
+
+			int pos = letter_in_wor(word, *c, &status_word[0]);
+			if (pos == -1) 
+				continue;
+			
+			*sP = 2;
+			status_word[pos] = 2;
+		}
+	}
+
+	// print
+	{
+		int* sP = status_input;
+		for (char* c = input; *c; ++c, ++sP) {
+			switch (*sP) {
+				case 1:
+					printf("\x1b[1;32m%c\x1b[0m", *c);
+					break;
+				case 2:
+					printf("\x1b[0;33m%c\x1b[0m", *c);
+					break;
+				default:
+					printf("\x1b[0;37m%c\x1b[0m", *c);
+			}
+		}
+	}
 	printf("\n");
+
+
+	return;
 }
 
 int main(void) {
@@ -126,10 +178,11 @@ int main(void) {
 		}
 
 		// game logic here
-		if (strcmp(current_word, word_to_match) == 0)
+		if (strcmp(current_word, word_to_match) == 0) {
 			game_state.state = WON;
-		else 
-			compare_words(word_to_match, current_word);
+			continue;
+		}
+		compare_words(word_to_match, current_word);
 		
 		// end of game logic
 
