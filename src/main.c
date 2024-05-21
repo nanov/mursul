@@ -70,7 +70,6 @@ int get_input(char* fill) {
 }
 
 
-
 void compare_words_alt(char* word, char* input) {
 	int secret_count[26] = {0};
 
@@ -91,8 +90,8 @@ void compare_words_alt(char* word, char* input) {
 			continue;
 		}
 		printf("\x1b[0;37m%c\x1b[0m", *in);
-	printf("\n");
 	}
+	printf("\n");
 }
 
 int main(void) {

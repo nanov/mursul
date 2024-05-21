@@ -19,11 +19,15 @@ INCLUDE_DIR = src/include
 # MURSUL_BUILD = $(CC) $(CFLAGS) `pkg-config --cflags $(PKGS)` -o mursul $(SRC) `pkg-config --libs $(PKGS)` -I$(INCLUDE_DIR) 
 MURSUL_BUILD = $(CC) $(CFLAGS) -o bin/mursul $(SRC) -I$(INCLUDE_DIR) 
 
-build:
-	mkdir -p bin
+.PHONY = release clean
+build: clean
 	$(MURSUL_BUILD)
 
-release:
+release: clean
 	$(eval BUILD=release)
-	$(KAFKADUCT_BUILD)
+	$(MURSUL_BUILD)
+
+clean:
+	mkdir -p bin
+
 
