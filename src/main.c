@@ -58,7 +58,8 @@ int get_input(char* fill) {
 }
 
 
-void compare_words_alt(char* word, char* input) {
+int compare_words_alt(char* word, char* input) {
+	int number_of_right_letters = 0;
 	int secret_count['z' - 'a'] = {0};
 
 	for (char *c=word, *in=input;*c;++c,++in) {
@@ -69,6 +70,7 @@ void compare_words_alt(char* word, char* input) {
 
 	for (char* c=word, *in = input;*c;++c,++in) {
 		if (*in == *c) {
+			number_of_right_letters++;
 			printf("\x1b[1;32m%c\x1b[0m", *in);
 			continue;
 		}
@@ -80,6 +82,7 @@ void compare_words_alt(char* word, char* input) {
 		printf("\x1b[0;37m%c\x1b[0m", *in);
 	}
 	printf("\n");
+	return number_of_right_letters;
 }
 
 int main(void) {
@@ -91,6 +94,7 @@ int main(void) {
 	printf("Now let's see how much of an idiot are YOU!\n");
 	printf("--------\n");
 
+	SetTraceLogLevel(LOG_ERROR);
 	InitAudioDevice();
 	Sound sound = LoadSound("assets/stupid.mp3");
 
@@ -103,7 +107,7 @@ int main(void) {
 	char* word_to_match = get_word();
 	// game loop
 	while(game_state.state == IN_PROGRESS) {
-		if (game_state.number_of_guesses == 2)
+		if (game_state.number_of_guesses == MAX_GUESSES)
 			break;
 		printf("please enter a 5 letter word:\n");
 		char* current_word = game_state.guesses[game_state.number_of_guesses];
@@ -125,12 +129,9 @@ int main(void) {
 				continue;
 		}
 
-		// game logic here
-		if (strcmp(current_word, word_to_match) == 0) {
+		int guessed_right = compare_words_alt(word_to_match, current_word);
+		if (guessed_right == WORD_LENGTH -1)
 			game_state.state = WON;
-			continue;
-		}
-		compare_words_alt(word_to_match, current_word);
 		
 		// end of game logic
 
