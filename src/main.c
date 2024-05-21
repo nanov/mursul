@@ -36,7 +36,7 @@ int is_alpha_right_length(char* input) {
 		if (!isalpha(c))
 			return 2;
 	}
-	if (input_p - input < desierd_len)
+	if ((size_t)(input_p - input) < desierd_len)
 		return 1;
 	return 0;
 }
@@ -63,79 +63,42 @@ int get_input(char* fill) {
 	}
 
 	// too short
-	if ((size_t)(fillP - fill) < desierd_len)
+	if (((size_t)(fillP - fill)) < desierd_len)
 		return -3;
 
 	return 0;
 }
 
-int letter_in_wor(const char* word, char letter, int* found_list) {
-	char* part = (char*)word;
-	while (1) {
-		part = strchr(part, letter);
-		if (part == NULL)
-			return -1;
-		int pos = part - word;
-		if (found_list[pos] == 0)
-			return pos;
-		part++;
-	}
-}
 
 
-void compare_words(const char* word, char* input) {
-	size_t i = 0;
-	int status_word[5] = {0};
-	int status_input[5] = {0};
+void compare_words_alt(char* word, char* input) {
+	int secret_count[26] = {0};
 
-	// match exact
 	{
-		int* sP = status_input;
-		int* wP = status_word;
-		for (char* c = input; *c; ++c, ++sP, ++wP) {
-			if (*c == *wP) {
-				*wP = 1;
-				*sP = 1;
-			} 
-		}
-	}
-
-	// match exsiting
-	{
-		int* sP = status_input;
-		for (char* c = input; *c; ++sP) {
-			if (*sP != 0)
-				continue;
-
-			int pos = letter_in_wor(word, *c, &status_word[0]);
-			if (pos == -1) 
-				continue;
-			
-			*sP = 2;
-			status_word[pos] = 2;
-		}
-	}
-
-	// print
-	{
-		int* sP = status_input;
-		for (char* c = input; *c; ++c, ++sP) {
-			switch (*sP) {
-				case 1:
-					printf("\x1b[1;32m%c\x1b[0m", *c);
-					break;
-				case 2:
-					printf("\x1b[0;33m%c\x1b[0m", *c);
-					break;
-				default:
-					printf("\x1b[0;37m%c\x1b[0m", *c);
+		char* in = input;
+		for (char* c=word;*c;++c,++in) {
+			if (*in != *c) {
+				secret_count[*c - 'a']++;
 			}
 		}
 	}
+
+	{
+		char* in = input;
+		for (char* c=word;*c;++c,++in) {
+			if (*in == *c) {
+				printf("\x1b[1;32m%c\x1b[0m", *in);
+				continue;
+			}
+			if (secret_count[*in - 'a'] > 0) {
+				printf("\x1b[0;33m%c\x1b[0m", *in);
+				secret_count[*in - 'a']--;
+				continue;
+			}
+			printf("\x1b[0;37m%c\x1b[0m", *in);
+		}
 	printf("\n");
-
-
-	return;
+	}
 }
 
 int main(void) {
@@ -182,7 +145,7 @@ int main(void) {
 			game_state.state = WON;
 			continue;
 		}
-		compare_words(word_to_match, current_word);
+		compare_words_alt(word_to_match, current_word);
 		
 		// end of game logic
 
