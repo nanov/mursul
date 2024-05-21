@@ -6,7 +6,7 @@
 
 #define MAX_GUESSES 5
 #define WORD_LENGTH 6 // 5 + \0
-#define SAFE_WORD "exit";
+#define SAFE_WORD "exit"
 
 typedef enum {
 	WON,
@@ -34,7 +34,7 @@ int get_input(char* fill) {
 	if (scanf("%5s", fill) != 1)
 		return -1;
 
-	if (strcasecmp("exit", fill) == 0)
+	if (strcasecmp(SAFE_WORD, fill) == 0)
 		return -5;
 
 	// longer
