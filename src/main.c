@@ -55,15 +55,16 @@ int get_input(char* fill) {
 	if (getchar() != '\n')
 		return -2;
 
-	char* fillP = fill;
-	for (char c = *fillP; c; c = *++fillP) {
+	char* c;
+	for (c = fill; *c; ++c) {
 		// wrong format
-		if (!isalpha(c))
+		if (!isalpha(*c))
 			return -4;
+		*c = tolower(*c);
 	}
 
 	// too short
-	if (((size_t)(fillP - fill)) < desierd_len)
+	if (((size_t)(c - fill)) < desierd_len)
 		return -3;
 
 	return 0;
