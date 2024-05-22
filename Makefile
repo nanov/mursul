@@ -10,7 +10,7 @@ BIN_DIR := bin
 
 CFLAGS.debug = -ggdb -O0 -fsanitize=address
 CFLAGS.release = -Ofast 
-CFLAGS=-Wall -Wextra -Wno-gnu -pthread -std=gnu2x ${CFLAGS.${BUILD}}
+CFLAGS=-Wall -Wextra -Wno-gnu -std=gnu2x ${CFLAGS.${BUILD}}
 
 SRC=$(wildcard src/*.c) $(wildcard src/**/*.c) $(wildcard src/include/**/*.c)
 
