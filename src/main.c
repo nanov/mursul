@@ -1,9 +1,13 @@
 #include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <raylib.h>
+#include <time.h>
+#include <sys/_types/_ssize_t.h>
+#include <curl/curl.h>
 
 #define MAX_GUESSES 5
 #define WORD_LENGTH 6 // 5 + \0
@@ -22,10 +26,66 @@ typedef struct {
 	char guesses[MAX_GUESSES][WORD_LENGTH];
 } game;
 
+size_t data_from_nyt(char* buffer, size_t item_size, size_t number_of_items, void* word_opaque) {
+	size_t total_size = item_size * number_of_items;
+	char* word = (char*)word_opaque;
+	buffer = strstr(buffer,"solution\":\"");
+	if (buffer != NULL) {
+		// TODO: verify that at -O2 and above strlen is compuile time...
+		buffer += strlen("solution\":\"");
+		strncpy(word, buffer, 5);
+		word[WORD_LENGTH -1] = 0;
+	}
+	return total_size;
+}
 
-// TODO: implement actual word fetching from file/url
-char* get_word(char* w) {
-	return w;
+int download_word_from_nyt(char* word) {
+	time_t now;
+	char today_iso[sizeof("1982-09-25")];
+	//  https://www.nytimes.com/svc/wordle/v2/2024-05-21.json
+	char url[sizeof("https://www.nytimes.com/svc/wordle/v2/1982-09-25.json")];
+	CURL* curl;
+
+	time(&now);
+	strftime(today_iso, sizeof(today_iso), "%F", gmtime(&now));
+	snprintf(url, sizeof(url), "https://www.nytimes.com/svc/wordle/v2/%s.json", today_iso);
+
+	// TODO: error handling
+	// TODO: logging
+	curl = curl_easy_init();
+	if (!curl)
+		return 1;
+
+	curl_easy_setopt(curl, CURLOPT_URL, url);
+ 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_from_nyt);
+ 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, word);
+	CURLcode result = curl_easy_perform(curl);
+	printf("curl got me - %s\n", word);
+	curl_easy_cleanup(curl);
+
+	return 0;
+}
+
+
+char* get_word_from_file(char* file_path) {
+	FILE* file;
+	char* word = malloc(sizeof(char) * 7);
+	time_t t;
+
+	file = fopen(file_path, "r");
+	fseek(file, 0L, SEEK_END);
+	srand((unsigned) time(&t));
+	size_t num_of_lines = ftell(file) / 6;
+	size_t line_number = rand() % num_of_lines;
+	fseek(file, line_number * 6, SEEK_SET);
+	
+
+	fgets(word, 7, file);
+
+	word[5] = 0;
+	printf("chose = %s\n", word);
+	fclose(file);
+	return word;
 }
 
 int get_input(char* fill) {
@@ -86,11 +146,12 @@ int compare_words_alt(char* word, char* input) {
 }
 
 int main(int argc, char** argv) {
+	char word_to_match[WORD_LENGTH];
+
 	printf("mursul baby\n");
 	printf("--------\n");
 	if (argc < 2) {
-		printf("USAGE : mursul [word]");
-		return 1;
+		download_word_from_nyt(word_to_match);
 	}
 
 	printf("Whenever I’m about to do something, I think, “Would an idiot do that?”\n");
@@ -108,7 +169,6 @@ int main(int argc, char** argv) {
 		.number_of_guesses = 0,
 	};
 
-	char* word_to_match = get_word(argv[1]);
 	// game loop
 	while(game_state.state == IN_PROGRESS) {
 		if (game_state.number_of_guesses == MAX_GUESSES)
