@@ -66,12 +66,11 @@ int download_word_from_nyt(char* word) {
 }
 
 
-char* get_word_from_file(char* file_path) {
+char* get_word_from_file(char* file_path, char* word) {
 	FILE* file;
-	char* word = malloc(sizeof(char) * 7);
 	time_t t;
 
-	file = fopen(file_path, "r");
+	file = fopen(file_path, "r"); // defer fclose
 	fseek(file, 0L, SEEK_END);
 	srand((unsigned) time(&t));
 	size_t num_of_lines = ftell(file) / 6;
@@ -84,6 +83,7 @@ char* get_word_from_file(char* file_path) {
 	word[5] = 0;
 	printf("chose = %s\n", word);
 	fclose(file);
+
 	return word;
 }
 
@@ -144,6 +144,13 @@ int compare_words_alt(char* word, char* input) {
 	return number_of_right_letters;
 }
 
+void print_usage() {
+	printf("USAGE: mursul [option]\n");
+	printf("    --help, -h - this.\n");
+	printf("    --nyt, -n - download word from New York Time API\n");
+	printf("    --file, -f - choose random word from words.txt file in assets\n");
+}
+
 int main(int argc, char** argv) {
 	char word_to_match[WORD_LENGTH];
 
@@ -151,6 +158,13 @@ int main(int argc, char** argv) {
 	printf("--------\n");
 	if (argc < 2) {
 		download_word_from_nyt(word_to_match);
+	} else {
+		if (strcmp(argv[1],"--help")==0 || strcmp(argv[1],"-h")==0) {
+			print_usage();
+			return 0;
+		} else if (strcmp(argv[1],"--file")==0 || strcmp(argv[1],"-f")==0) {
+			get_word_from_file("assets/words.txt");
+		}
 	}
 
 	printf("Whenever I’m about to do something, I think, “Would an idiot do that?”\n");
