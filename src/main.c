@@ -60,7 +60,6 @@ int download_word_from_nyt(char* word) {
  	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_from_nyt);
  	curl_easy_setopt(curl, CURLOPT_WRITEDATA, word);
 	CURLcode result = curl_easy_perform(curl);
-	printf("curl got me - %s\n", word);
 	curl_easy_cleanup(curl);
 
 	return 0;
