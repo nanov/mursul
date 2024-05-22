@@ -12,6 +12,17 @@
 #define MAX_GUESSES 5
 #define WORD_LENGTH 6 // 5 + \0
 #define SAFE_WORD "exit"
+#define CHEAT_WORD "fool"
+#define ASCII_RANGE (('z' - 'a') + 1)
+#define ASCII_POS(c) (c-'a')
+
+#define ASCII_PREVIOUS_LINE "\x1B[1A"
+#define ASCII_ITALIC "\e[3m"
+#define ASCII_BOLD "\e[1m"
+#define ASCII_RESET "\e[0m"
+#define ASCII_GREEN "\x1b[0;32m"
+#define ASCII_YELLOW "\x1b[0;33m"
+
 
 typedef enum {
 	WON,
@@ -77,11 +88,9 @@ char* get_word_from_file(char* file_path, char* word) {
 	size_t line_number = rand() % num_of_lines;
 	fseek(file, line_number * 6, SEEK_SET);
 	
+	fgets(word, 6, file);
 
-	fgets(word, 7, file);
-
-	word[5] = 0;
-	printf("chose = %s\n", word);
+	word[5] = 0; // null terminator or segfault :/
 	fclose(file);
 
 	return word;
@@ -96,6 +105,9 @@ int get_input(char* fill) {
 
 	if (strcasecmp(SAFE_WORD, fill) == 0)
 		return -5;
+
+	if (strcasecmp(CHEAT_WORD, fill) == 0)
+		return -6;
 
 	// longer
 	if (getchar() != '\n')
@@ -119,52 +131,73 @@ int get_input(char* fill) {
 
 int compare_words_alt(char* word, char* input) {
 	int number_of_right_letters = 0;
-	int secret_count['z' - 'a'] = {0};
+	// 'z'(122) - 'a'(97) + 1 == 26
+	int secret_count[ASCII_RANGE] = {0};
 
 	for (char *c=word, *in=input;*c;++c,++in) {
 		if (*in != *c) {
-			secret_count[*c - 'a']++;
+			secret_count[ASCII_POS(*c)]++;
 		}
 	}
 
+	printf(ASCII_PREVIOUS_LINE);
 	for (char* c=word, *in = input;*c;++c,++in) {
 		if (*in == *c) {
 			number_of_right_letters++;
-			printf("\x1b[1;32m%c\x1b[0m", *in);
+			printf(ASCII_GREEN "%c", *in);
 			continue;
 		}
 		if (secret_count[*in - 'a'] > 0) {
-			printf("\x1b[0;33m%c\x1b[0m", *in);
-			secret_count[*in - 'a']--;
+			printf(ASCII_YELLOW "%c", *in);
+			secret_count[ASCII_POS(*in)]--;
 			continue;
 		}
-		printf("\x1b[0;37m%c\x1b[0m", *in);
+		printf(ASCII_RESET "%c", *in);
 	}
-	printf("\n");
+	printf(ASCII_RESET "\n");
 	return number_of_right_letters;
 }
 
 void print_usage() {
 	printf("USAGE: mursul [option]\n");
-	printf("    --help, -h - this.\n");
-	printf("    --nyt, -n - download word from New York Time API\n");
-	printf("    --file, -f - choose random word from words.txt file in assets\n");
+	printf("    --help, -h 								 - this\n");
+	printf("    --nyt, -n 								 - download word from New York Time API\n");
+	printf("    --file, -f 								 - choose random word from words.txt file in assets\n");
+	printf("    --assets=[path], -a=[path] - specify assets path\n");
+	printf("\n");
+}
+
+int parse_args(int argc, char** argv, char* assets_path) {
+	int result = 0;
+	for (size_t i=1; i<(size_t)argc; ++i) {
+		if (strcmp(argv[i],"--help")==0 || strcmp(argv[i],"-h")==0) {
+			print_usage();
+			return -1; // exit - help
+		} else if (strcmp(argv[i],"--file")==0 || strcmp(argv[i],"-f")==0) {
+			result = 1; 
+		} else if (strncmp("--assets=", argv[i], strlen("--assets="))==0 || strncmp("-a=", argv[i],strlen("-a="))==0) {
+			strcpy(assets_path, (strchr(argv[i], '=') + 1));
+		}
+	}
+	return result;
 }
 
 int main(int argc, char** argv) {
 	char word_to_match[WORD_LENGTH];
 
+	char assets_path[4096] = "assets/"; // longest unix path
+	char asset_full_path[4096 + 12];
+
 	printf("mursul baby\n");
 	printf("--------\n");
-	if (argc < 2) {
-		download_word_from_nyt(word_to_match);
+	int c = parse_args(argc, argv, assets_path);
+	if (c==-1) {
+		return 0;
+	} else if (c==1) {
+		snprintf(asset_full_path, sizeof(asset_full_path), "%s/%s", assets_path, "words.txt");
+		get_word_from_file(asset_full_path, word_to_match);
 	} else {
-		if (strcmp(argv[1],"--help")==0 || strcmp(argv[1],"-h")==0) {
-			print_usage();
-			return 0;
-		} else if (strcmp(argv[1],"--file")==0 || strcmp(argv[1],"-f")==0) {
-			get_word_from_file("assets/words.txt");
-		}
+		download_word_from_nyt(word_to_match);
 	}
 
 	printf("Whenever I’m about to do something, I think, “Would an idiot do that?”\n");
@@ -174,7 +207,8 @@ int main(int argc, char** argv) {
 
 	SetTraceLogLevel(LOG_ERROR);
 	InitAudioDevice();
-	Sound sound = LoadSound("assets/stupid.mp3");
+	snprintf(asset_full_path, sizeof(asset_full_path), "%s/%s", assets_path, "stupid.mp3");
+	Sound sound = LoadSound(asset_full_path);
 
 
 	game game_state = {
@@ -191,6 +225,9 @@ int main(int argc, char** argv) {
 
 		int input_result = get_input(current_word);
 		switch (input_result) {
+			case -6:
+				printf("Not only and idiot, a cheater as well, shhhh, this is the word " ASCII_ITALIC ASCII_BOLD "%s" ASCII_RESET "\n", word_to_match);
+				continue;
 			case -5:
 				printf("Quitter, idiot.\n");
 				return input_result;
