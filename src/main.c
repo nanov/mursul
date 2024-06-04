@@ -6,13 +6,12 @@
 #include <strings.h>
 #include <raylib.h>
 #include <time.h>
-#include <sys/_types/_ssize_t.h>
 #include <curl/curl.h>
 
 #define MAX_GUESSES 5
 #define WORD_LENGTH 6 // 5 + \0
-#define SAFE_WORD "exit"
-#define CHEAT_WORD "fool"
+#define QUIT_COMMAND 'q'
+#define CHEAT_COMMAND 'c'
 #define ASCII_RANGE (('z' - 'a') + 1)
 #define ASCII_POS(c) (c-'a')
 
@@ -42,7 +41,6 @@ size_t data_from_nyt(char* buffer, size_t item_size, size_t number_of_items, voi
 	char* word = (char*)word_opaque;
 	buffer = strstr(buffer,"solution\":\"");
 	if (buffer != NULL) {
-		// TODO: verify that at -O2 and above strlen is compuile time...
 		buffer += strlen("solution\":\"");
 		strncpy(word, buffer, 5);
 		word[WORD_LENGTH -1] = 0;
@@ -54,12 +52,13 @@ int download_word_from_nyt(char* word) {
 	time_t now;
 	char today_iso[sizeof("1982-09-25")];
 	//  https://www.nytimes.com/svc/wordle/v2/2024-05-21.json
-	char url[sizeof("https://www.nytimes.com/svc/wordle/v2/1982-09-25.json")];
+	const size_t url_size = sizeof("https://www.nytimes.com/svc/wordle/v2/1982-09-25.json");
+	char url[url_size];
 	CURL* curl;
 
 	time(&now);
 	strftime(today_iso, sizeof(today_iso), "%F", gmtime(&now));
-	snprintf(url, sizeof(url), "https://www.nytimes.com/svc/wordle/v2/%s.json", today_iso);
+	snprintf(url, url_size, "https://www.nytimes.com/svc/wordle/v2/%s.json", today_iso);
 
 	// TODO: error handling
 	// TODO: logging
@@ -72,6 +71,9 @@ int download_word_from_nyt(char* word) {
  	curl_easy_setopt(curl, CURLOPT_WRITEDATA, word);
 	CURLcode result = curl_easy_perform(curl);
 	curl_easy_cleanup(curl);
+
+	if (result != CURLE_OK)
+		return 1;
 
 	return 0;
 }
@@ -103,11 +105,20 @@ int get_input(char* fill) {
 	if (scanf("%5s", fill) != 1)
 		return -1;
 
-	if (strcasecmp(SAFE_WORD, fill) == 0)
-		return -5;
 
-	if (strcasecmp(CHEAT_WORD, fill) == 0)
-		return -6;
+	// command mode
+	if (fill[0] == ':') {
+
+		if (fill[2] != 0)
+			return -7;
+		if (fill[1] == QUIT_COMMAND)
+			return -5;
+
+		if (fill[1] == CHEAT_COMMAND)
+			return -6;
+
+		return  -7;
+	}
 
 	// longer
 	if (getchar() != '\n')
@@ -167,7 +178,7 @@ void print_usage() {
 	printf("\n");
 }
 
-int parse_args(int argc, char** argv, char* assets_path) {
+int parse_args(int argc, char** argv, char** assets_path) {
 	int result = 0;
 	for (size_t i=1; i<(size_t)argc; ++i) {
 		if (strcmp(argv[i],"--help")==0 || strcmp(argv[i],"-h")==0) {
@@ -176,7 +187,7 @@ int parse_args(int argc, char** argv, char* assets_path) {
 		} else if (strcmp(argv[i],"--file")==0 || strcmp(argv[i],"-f")==0) {
 			result = 1; 
 		} else if (strncmp("--assets=", argv[i], strlen("--assets="))==0 || strncmp("-a=", argv[i],strlen("-a="))==0) {
-			strcpy(assets_path, (strchr(argv[i], '=') + 1));
+			*assets_path = (strchr(argv[i], '=') + 1);
 		}
 	}
 	return result;
@@ -185,12 +196,12 @@ int parse_args(int argc, char** argv, char* assets_path) {
 int main(int argc, char** argv) {
 	char word_to_match[WORD_LENGTH];
 
-	char assets_path[4096] = "assets/"; // longest unix path
+	char* assets_path = "assets/";
 	char asset_full_path[4096 + 12];
 
 	printf("mursul baby\n");
 	printf("--------\n");
-	int c = parse_args(argc, argv, assets_path);
+	int c = parse_args(argc, argv, &assets_path);
 	if (c==-1) {
 		return 0;
 	} else if (c==1) {
@@ -200,9 +211,9 @@ int main(int argc, char** argv) {
 		download_word_from_nyt(word_to_match);
 	}
 
-	printf("Whenever I’m about to do something, I think, “Would an idiot do that?”\n");
+	printf(ASCII_ITALIC "Whenever I’m about to do something, I think, “Would an idiot do that?”\n");
 	printf("And if they would, I do not do that thing. - Dwight Schrute.\n");
-	printf("Now let's see how much of an idiot are YOU!\n");
+	printf("Now let's see how much of an idiot are YOU!\n" ASCII_RESET);
 	printf("--------\n");
 
 	SetTraceLogLevel(LOG_ERROR);
@@ -225,6 +236,9 @@ int main(int argc, char** argv) {
 
 		int input_result = get_input(current_word);
 		switch (input_result) {
+			case -7:
+				printf("Unknown command, idiot!\n");
+				continue;
 			case -6:
 				printf("Not only and idiot, a cheater as well, shhhh, this is the word " ASCII_ITALIC ASCII_BOLD "%s" ASCII_RESET "\n", word_to_match);
 				continue;
