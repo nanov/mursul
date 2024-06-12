@@ -103,6 +103,12 @@ char *get_word_from_file(char *file_path, char *word) {
 
 const input_union q = {.word_val = ".q"};
 
+void str_insert(char* source, char addition, size_t pos) {
+
+}
+
+#define INPUT_COMMAND_MODE 2
+
 int get_input(char *fill, char history[5][6], size_t history_length) {
   static size_t desierd_len = WORD_LENGTH - 1;
 
@@ -114,89 +120,81 @@ int get_input(char *fill, char history[5][6], size_t history_length) {
   tcsetattr(0, TCSANOW, &raw_terminos);
 
   char f;
-	int dirty = 0; // 1 = normal, 2 = command
-	int mode = 0; // 1 = normal, 2 = command
+	bool dirty = 0; // 1 = normal, 2 = command
+	int mode = 0; // 0 = normal, 2 = command
 	size_t pos = 0;
 	size_t len = 0;
 	size_t history_pos = history_length;
 	*fill = '\0';
   while (read(STDIN_FILENO, &f, 1) && f != '\n') {
-		if (f == 127) { // backspace
-			if (pos > 0) {
+		switch (f) {
+			case 127: { // backspace
+				if (pos==0)
+					continue;
 				char* pos_ptr = fill + pos;
-					memmove(pos_ptr - 1, pos_ptr, 6 - pos);
-					pos--;
-					len--;
+				memmove(pos_ptr - 1, pos_ptr, 6 - pos);
+				pos--;
+				len--;
 				if (len == 0) {
 					mode = 0; // reset mode
 					dirty = 0;
 				}
-			}
-		} else if (f == 27) { // possibly arrows
-			read(STDIN_FILENO, &f, 1);
-			read(STDIN_FILENO, &f, 1);
-			if (f == 68) { // left
-				if (pos > 0)
-					pos--;
-			} else if (f == 67) { // right
-				if (pos < len)
+			};
+			break;
+			case 27: { // arrow keys
+				read(STDIN_FILENO, &f, 1);
+				read(STDIN_FILENO, &f, 1);
+				switch(f) {
+					case 68:
+						if (pos>0)
+							pos--;
+						break;
+					case 67:
+						if (pos<len)
+							pos++;
+						break;
+					case 65:
+						if (history_pos == 0)
+							continue;
+						history_pos--;
+						goto history_move;
+					case 66:
+						if (history_pos >= history_length)
+							continue;
+						history_pos++;
+						goto history_move;
+					history_move:
+						if (dirty == 1)
+							continue;
+						
+						if (history_pos == history_length) {
+							fill[0]= '\0';
+							pos = 0;
+							len = 0;
+							mode = 0;
+						} else {
+							strncpy(fill, history[history_pos], 6);
+							pos = len = strlen(fill);
+							mode = fill[0] == ':' ? INPUT_COMMAND_MODE : 0;
+						}
+				} break;
+				case ':':
+					if (len != 0)
+						continue;
+					mode = INPUT_COMMAND_MODE;
+				case 'a'...'z':
+				case 'A'...'Z':
+					if (len + mode >= 5)
+						continue;
+					char* pos_ptr = fill + pos;
+					memmove(pos_ptr + 1, pos_ptr, 6 - (pos + 1));
+					*pos_ptr = f;
 					pos++;
-			} else if (f == 65) { // up
-				if (dirty != 0)
-					continue;
-				if (history_pos > 0) {
-					strncpy(fill, history[--history_pos], 6);
-					pos = len = strlen(fill);
-					mode = fill[0] == ':' ? 1 : 0;
-				}
-			} else if (f == 66) { // down
-				if (history_pos >= history_length)
-					continue;
-				if (dirty != 0)
-					continue;
-
-				history_pos += 1;
-				if (history_pos == history_length) {
-					fill[0]= '\0';
-					pos = 0;
-					len = 0;
-					mode = 0;
-				} else {
-					strncpy(fill, history[history_pos], 6);
-					pos = len = strlen(fill);
-					mode = fill[0] == ':' ? 1 : 0;
-				}
-			}
-		} else if (f == ':' && len == 0) { // enter command mode
-				char* pos_ptr = fill + pos;
-				memmove(pos_ptr + 1, pos_ptr, 6 - (pos + 1));
-				*pos_ptr = f;
-				pos++;
-				len++;
-				mode = 1;
-		} else if (f >= 'a' && f <= 'z' || f >= 'A' && f <= 'Z') { // actual text
-			f = tolower(f);
-
-			if (mode==0) {
-				if (len >= 5) // longest
-					continue;
-				char* pos_ptr = fill + pos;
-				memmove(pos_ptr + 1, pos_ptr, 6 - (pos + 1));
-				*pos_ptr = f;
-				pos++;
-				len++;
-				dirty=1;
-			} else if (mode == 1 && pos > 0) {
-				if (len>=2)
-					continue;
-				char* pos_ptr = fill + pos;
-				memmove(pos_ptr + 1, pos_ptr, 6 - (pos + 1));
-				*pos_ptr = f;
-				pos++;
-				len++;
-				dirty=1;
-			}
- 		}
+					len++;
+					dirty=1;
+				break;
+			};
+		}
 		printf(ASCII_CLEAR_LINE "\r%s", fill);
 		printf("\033[%zuG", pos+1);
 		fflush(stdout);
