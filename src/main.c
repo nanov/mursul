@@ -141,14 +141,20 @@ int get_input(char *fill, char history[5][6], size_t history_length) {
 				}
 			};
 			break;
+			case 8: goto arrow_movement; // ctrl+h
+			case 12: goto arrow_movement; // ctrl+l
 			case 27: { // arrow keys
 				read(STDIN_FILENO, &f, 1);
 				read(STDIN_FILENO, &f, 1);
+			// TODO: not entierly happy with this
+			arrow_movement:	
 				switch(f) {
+					case 8:
 					case 68:
 						if (pos>0)
 							pos--;
 						break;
+					case 12:
 					case 67:
 						if (pos<len)
 							pos++;
@@ -195,7 +201,7 @@ int get_input(char *fill, char history[5][6], size_t history_length) {
 				break;
 			};
 		}
-		printf(ASCII_CLEAR_LINE "\r%s", fill);
+		printf(ASCII_CLEAR_LINE "\r%s",fill);
 		printf("\033[%zuG", pos+1);
 		fflush(stdout);
   }
